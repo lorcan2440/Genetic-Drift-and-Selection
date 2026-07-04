@@ -104,7 +104,7 @@ def create_plots(Ne: float = 100, s: float = 0.003, Nx: int = 1000, Nt: int = 10
 
 if __name__ == "__main__":
 
-    pde_results, X_sde = create_plots(save_path="output/kimura_pde_sde_comparison.svg")
+    pde_results, X_sde = create_plots(s=0, save_path="output/kimura_pde_sde_comparison.svg")
 
     print(
         "PDE mass error "

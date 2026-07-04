@@ -89,3 +89,9 @@ $$ P_{\text{fix}} = \frac{1 - e^{-2 N_e s x_0}}{1 - e^{-2 N_e s}} $$
 In this simulation, parameters used were $ N_e = 100 $, $ s = 0.003 $, $ x_0 = 0.3 $, and $ \sigma_0 = 0.08 $. This represents drift below the selection threshold since $ N_e s = 0.3 < 1 $ - but fixation is still achieved with a non-zero probability, as expected of nearly-neutral alleles.
 
 The maximum error in the probability mass (computed as the greatest difference between the total probability at time $ t $ and 1) was on the order of $ 10^{-6} $, showing the numerical solution is well-behaved.
+
+Some counter-intuitive but nonetheless accurate conclusions include:
+
+- If $ s < 0 $ (deleterious allele), the allele can still be fixed in the population due to drift alone, especially if $ | N_e * s | << 1 $ In this case, the probability of fixation is a little less than $ x_0 $.
+- If $ s = 0 $ (purely neutral allele), the probability of fixation is exactly equal to the initial allele frequency $ x_0 $. In this case, only genetic drift is acting. This is why neutral alleles can fix with relative ease in small populations, where the first mutant gives $ x_0 = 1 / N_e $ is not negligible.
+- If $ s > 0 $ (beneficial allele), the probability of fixation is greater than $ x_0 $, but there is still a finite probability of loss due to drift, especially if $ N_e s < 1 $.
