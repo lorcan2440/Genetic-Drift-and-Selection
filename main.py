@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
@@ -11,7 +12,7 @@ plt.style.use(r"C:\LibsAndApps\Python config files\proplot_style.mplstyle")
 
 
 def create_plots(Ne: float = 100, s: float = 0.003, Nx: int = 1000, Nt: int = 10000, tmax: float = 500.0, 
-        x0: float = 0.3, sigma0: float = 0.08, n_paths: int = 500, seed: int = 12345, save_dir: str = None) -> tuple[dict, np.ndarray]:
+        x0: float = 0.3, sigma0: float = 0.08, n_paths: int = 500, seed: int = 12345, save_path: str = None) -> tuple[dict, np.ndarray]:
     '''
     Create plots for Kimura's PDE and SDE simulations.
     
@@ -25,6 +26,7 @@ def create_plots(Ne: float = 100, s: float = 0.003, Nx: int = 1000, Nt: int = 10
     - `sigma0` (float, default = 0.08): Standard deviation of initial allele frequency
     - `n_paths` (int, default = 500): Number of SDE trajectories to simulate
     - `seed` (int, default = 12345): Random seed for reproducibility
+    - `save_path` (str, default = None): Path to save the figure. If None, the figure is not saved.
     
     ### Returns
     - `pde_results` (dict): Results from the PDE simulation
@@ -83,19 +85,23 @@ def create_plots(Ne: float = 100, s: float = 0.003, Nx: int = 1000, Nt: int = 10
     ax3.grid(alpha=0.3)
     ax3.legend(loc="upper right", ncol=2)
 
-    plt.setp(ax2.get_xticklabels(), visible=False)
+    #plt.setp(ax2.get_xticklabels(), visible=False)
 
     fig.suptitle(f"Genetic drift with weak natural selection: $N_e={Ne}$, $s={s}$, $x_0={x0}$, $\\sigma_0={sigma0}$")
 
-    if save_dir is not None:
-        plt.savefig(save_dir, dpi=300, bbox_inches="tight")
+    if save_path is not None:
+        save_dir = os.path.dirname(save_path)
+        if save_dir and not os.path.isdir(save_dir):
+            os.makedirs(save_dir, exist_ok=True)
+        
+        plt.savefig(save_path, dpi=300, bbox_inches="tight")
 
     return pde_results, X_sde
 
 
 if __name__ == "__main__":
 
-    pde_results, X_sde = create_plots(save_dir="output/kimura_pde_sde_comparison.svg")
+    pde_results, X_sde = create_plots(save_path="output/kimura_pde_sde_comparison.svg")
 
     print(
         "PDE mass error "

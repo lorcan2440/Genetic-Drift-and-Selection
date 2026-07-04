@@ -6,6 +6,22 @@ The code also simulates the corresponding stochastic differential equation (SDEs
 
 Comparisons to theoretical results in population genetics are also included (fixation and loss probabilities).
 
+## Usage
+
+See `main.py` for an example, which can be run directly.
+
+The editable parameters are:
+
+- `Ne` (int, default = 100): Effective population size
+- `s` (float, default = 0.003): Selection coefficient
+- `Nx` (int, default = 1000): Number of spatial grid points for PDE
+- `Nt` (int, default = 10000): Number of time steps for PDE
+- `tmax` (float, default = 500.0): Maximum simulation time
+- `x0` (float, default = 0.3): Initial allele frequency (mean)
+- `sigma0` (float, default = 0.08): Standard deviation of initial allele frequency
+- `n_paths` (int, default = 500): Number of SDE trajectories to simulate
+- `seed` (int, default = 12345): Random seed for reproducibility
+
 ## Theory
 
 Suppose we have a population of effective size $ N_e $ and a biallelic locus with alleles A and a. Let $ x $ denote the frequency of allele A in the population at time $ t $.
@@ -20,7 +36,7 @@ The subsequent evolution (change in allele frequency over time) under genetic dr
 
 $$ \frac{\partial \phi(x, t)}{\partial t} = -\frac{\partial}{\partial x} \left[ s x (1 - x) \phi(x, t) \right] + \frac{1}{2 N_e} \frac{\partial^2}{\partial x^2} \left[ x (1 - x) \phi(x, t) \right] $$
 
-where $ s $ is the selection coefficient for allele A.
+where $ s $ is the selection coefficient for allele A. This equation is the continuous-time limit of the Wright-Fisher model. The units of $ t $ are in number of generations.
 
 In this code, the actual initial condition is approximated by a narrow Gaussian distribution centered at $ x_0 $ with a small standard deviation $ \sigma_0 $ (represents some uncertainty in the initial allele frequency).
 
