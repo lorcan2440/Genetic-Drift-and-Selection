@@ -74,7 +74,7 @@ To simulate individual trajectories of allele frequencies, we can use the corres
 
 $$ dx = s x (1 - x) dt + \sqrt{\frac{x (1 - x)}{2 N_e}} dW_t $$
 
-where $ dW_t $ is a Wiener process (standard Brownian motion).
+where $ W_t $ is the Wiener process (standard Brownian motion).
 
 A suitable numerical method for generating sample paths of this SDE is the Milstein method, used in this code.
 
