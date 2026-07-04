@@ -59,3 +59,11 @@ A suitable numerical method for generating sample paths of this SDE is the Milst
 ## Results
 
 ![Kimura's PDE and SDE Comparison](output/kimura_pde_sde_comparison.svg)
+
+It can be seen visually that the PDE solution and the SDE simulations are in good agreement. The long-term fixation probability computed from the PDE solution matches that predicted by Kimura's formula:
+
+$$ P_{\text{fix}} = \frac{1 - e^{-2 N_e s x_0}}{1 - e^{-2 N_e s}} $$
+
+In this simulation, parameters used were $ N_e = 100 $, $ s = 0.003 $, $ x_0 = 0.3 $, and $ \sigma_0 = 0.08 $. This represents drift below the selection threshold since $ N_e s = 0.3 < 1 $ - but fixation is still achieved with a non-zero probability, as expected of nearly-neutral alleles.
+
+The maximum error in the probability mass (computed as the greatest difference between the total probability at time $ t $ and 1) was on the order of $ 10^{-6} $, showing the numerical solution is well-behaved.
