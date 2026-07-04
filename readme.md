@@ -24,9 +24,9 @@ The editable parameters are:
 
 ## Theory
 
-Suppose we have a population of effective size $ N_e $ and a biallelic locus with alleles A and a. Let $ x $ denote the frequency of allele A in the population at time $ t $.
+Suppose we have a population of "effective" size $ N_e $. At a particular locus (section of DNA), there are two alleles, A and a, with frequencies $ x $ and $ 1 - x $, respectively. The dynamics of allele frequency over time can be influenced by both genetic drift (random fluctuations due to finite population size) and natural selection (differential reproductive success based on allele type).
 
-If the initial allele frequency is known to be exactly $ x_0 $ at time $ t = 0 $, we can represent this as a Dirac delta function:
+If the initial allele frequency of A (which we want to forecast into the future) is known to be exactly $ x_0 $ at initial time $ t = 0 $, we can represent this as a Dirac delta function:
 
 $$ \phi(x, 0) = \delta(x - x_0) $$
 
