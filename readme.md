@@ -24,7 +24,11 @@ The editable parameters are:
 
 ## Theory
 
-Suppose we have a population of "effective" size $ N_e $. At a particular locus (section of DNA), there are two alleles, A and a, with frequencies $ x $ and $ 1 - x $, respectively. The dynamics of allele frequency over time can be influenced by both genetic drift (random fluctuations due to finite population size) and natural selection (differential reproductive success based on allele type).
+Suppose we have a population of "effective" size $ N_e $. At a particular locus (section of DNA), there are two **alleles** (variants of the DNA sequence), A and a, with frequencies $ x $ and $ 1 - x $, respectively. 
+
+The dynamics of allele frequency over time is influenced by **genetic drift**, which is the random fluctuations due to finite population size. 
+
+If the allele A has some selective advantage (or disadvantage) over allele a, then Darwinian **natural selection** (differential reproductive success based on allele type) will also influence the allele frequency dynamics.
 
 If the initial allele frequency of A (which we want to forecast into the future) is known to be exactly $ x_0 $ at initial time $ t = 0 $, we can represent this as a Dirac delta function:
 
@@ -32,19 +36,19 @@ $$ \phi(x, 0) = \delta(x - x_0) $$
 
 where $ \phi(x, t) $ is the probability density function of the allele frequency being $ x $ at time $ t $.
 
-The subsequent evolution (change in allele frequency over time) under genetic drift and natural selection can be described by Kimura's drift-diffusion equation, which is a partial differential equation (PDE):
+The subsequent **evolution** (change in allele frequency over time) under the combined effect of genetic drift and natural selection can be described by Motoo Kimura's drift-diffusion equation, which is a partial differential equation (PDE):
 
 $$ \frac{\partial \phi(x, t)}{\partial t} = -\frac{\partial}{\partial x} \left[ s x (1 - x) \phi(x, t) \right] + \frac{1}{2 N_e} \frac{\partial^2}{\partial x^2} \left[ x (1 - x) \phi(x, t) \right] $$
 
-where $ s $ is the selection coefficient for allele A. This equation is the continuous-time limit of the Wright-Fisher model. The units of $ t $ are in number of generations.
+where $ s $ is the **selection coefficient** for allele A. This equation is the continuous-time limit of the Wright-Fisher model. The units of $ t $ are in number of generations.
 
 In this code, the actual initial condition is approximated by a narrow Gaussian distribution centered at $ x_0 $ with a small standard deviation $ \sigma_0 $ (represents some uncertainty in the initial allele frequency).
 
 To give this problem a unique solution, we require boundary conditions at $ x = 0 $ and $ x = 1 $. These are absorbing boundaries, meaning that if the allele frequency reaches either boundary, it will remain there (fixation or loss of the allele).
 
-We have assumed that no new mutations occur during the simulation, so that the system remains with only two alleles. This is reasonable for short-term simulations as it is known that standing variation is the main source of genetic variation in populations, and new mutations are relatively rare events on a per-allele basis.
+We have assumed that no new **mutations** occur during the simulation, so that the system remains with only two alleles. This is reasonable for short-term simulations as it is known that **standing variation** is the main source of genetic variation in populations, and new mutations are relatively rare events on a per-allele basis.
 
-A suitable numerical method for solving this PDE (as a Fokker-Planck equation) is the Chang-Cooper scheme, which is a finite difference method that preserves the positivity and normalization of the probability density function.
+A suitable numerical method for solving this PDE (as a Fokker-Planck equation) is the Chang-Cooper scheme, which is a finite difference method that preserves the positivity and normalization of the probability density function, which is used in this code.
 
 To calculate the probability of fixation or loss of allele A, we define the probability flux $ J(x, t) $ as:
 
@@ -54,11 +58,11 @@ such that the PDE can be rewritten as a continuity equation:
 
 $$ \frac{\partial \phi(x, t)}{\partial t} = -\frac{\partial J(x, t)}{\partial x}. $$
 
-The probability of fixation of allele A is given by the time-integrated flux at $ x = 1 $:
+The probability of **fixation** of allele A is given by the time-integrated flux at $ x = 1 $:
 
 $$ P_{\text{fix}}(t) = \int_0^t J(1, \tau) d\tau $$
 
-Likewise, the probability of loss of allele A is given by the time-integrated flux at $ x = 0 $:
+Likewise, the probability of **loss** of allele A is given by the time-integrated flux at $ x = 0 $:
 
 $$ P_{\text{loss}}(t) = \int_0^t J(0, \tau) d\tau $$
 
@@ -72,7 +76,7 @@ $$ dx = s x (1 - x) dt + \sqrt{\frac{x (1 - x)}{2 N_e}} dW_t $$
 
 where $ dW_t $ is a Wiener process (standard Brownian motion).
 
-A suitable numerical method for generating sample paths of this SDE is the Milstein method.
+A suitable numerical method for generating sample paths of this SDE is the Milstein method, used in this code.
 
 ## Results
 
