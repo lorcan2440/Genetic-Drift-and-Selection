@@ -48,7 +48,7 @@ To give this problem a unique solution, we require boundary conditions at $ x = 
 
 We have assumed that no new **mutations** occur during the simulation, so that the system remains with only two alleles. This is reasonable for short-term simulations as it is known that **standing variation** is the main source of genetic variation in populations, and new mutations are relatively rare events on a per-allele basis.
 
-A suitable numerical method for solving this PDE (as a Fokker-Planck equation) is the Chang-Cooper scheme, which is a finite difference method that preserves the positivity and normalization of the probability density function, which is used in this code.
+A suitable numerical method for solving this PDE (as a Fokker-Planck equation) is the Chang-Cooper scheme, which is a finite difference method that preserves the positivity and normalisation of the probability density function, which is used in this code.
 
 To calculate the probability of fixation or loss of allele A, we define the probability flux $ J(x, t) $ as:
 
