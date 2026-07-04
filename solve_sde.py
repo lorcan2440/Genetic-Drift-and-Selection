@@ -1,30 +1,45 @@
 import numpy as np
 from scipy.stats import truncnorm
 
-"""Kimura SDE solver with Milstein discretization and absorbing boundaries.
-
-This module exposes a callable function `simulate_kimura_sde_milstein` and does
-not perform plotting at import/runtime.
-"""
-
 
 def a_drift(x, s):
+    # Deterministic selection term in the Wright-Fisher diffusion limit.
     return s * x * (1.0 - x)
 
 
 def b_diffusion(x, Ne):
+    # Diffusion amplitude satisfies b(x)^2 = 2D(x) = x(1-x)/Ne.
     return np.sqrt(np.maximum(x * (1.0 - x), 0.0) / Ne)
 
 
 def bb_prime(x, Ne):
+    # Product b*b' gives the scalar Milstein correction coefficient.
     return (1.0 - 2.0 * x) / (2.0 * Ne)
 
 
-def simulate_kimura_sde_milstein(Ne=1000, s=0.01, Nt=5000, tmax=1000.0, x0=0.3, sigma0=0.0, n_paths=1500, seed=12345):
-    """Simulate Kimura SDE trajectories with Milstein's method.
+def simulate_kimura_sde_milstein(Ne: float = 1000, s: float = 0.01, Nt: int = 5000, tmax: float = 1000.0, 
+        x0: float = 0.3, sigma0: float = 0.0, n_paths: int = 1500, seed: int = 12345) -> tuple[np.ndarray, np.ndarray]:
+    '''
+    Solve Kimura's drift-diffusion SDE with absorbing boundaries via the Milstein scheme:
 
-    Returns a dictionary with the time grid, trajectories, and summary fractions.
-    """
+    dx = A(x) dt + b(x) dW_t, 0 < x < 1, t > 0
+
+    where A(x) = s x(1-x) and b(x) = sqrt(x(1-x)/Ne), with absorbing boundaries at x = 0 and x = 1,
+    and W_t is the standard Wiener process (Brownian motion).
+
+    The initial condition x(0) is drawn from a truncated Gaussian centered at x0 with standard deviation sigma0,
+    truncated to the interval [0, 1].
+
+    ### Arguments
+    - `Ne` (float, default = 1000): Effective population size.
+    - `s` (float, default = 0.01): Selection coefficient.
+    - `Nt` (int, default = 5000): Number of time steps.
+    - `tmax` (float, default = 1000.0): Maximum simulation time.
+    - `x0` (float, default = 0.3): Initial allele frequency (mean).
+    - `sigma0` (float, default = 0.0): Standard deviation of the initial Gaussian distribution.
+    - `n_paths` (int, default = 1500): Number of SDE trajectories to simulate.
+    - `seed` (int, default = 12345): Random seed for reproducibility.
+    '''
     T = np.linspace(0.0, tmax, Nt + 1)
     dt = T[1] - T[0]
 
@@ -32,10 +47,11 @@ def simulate_kimura_sde_milstein(Ne=1000, s=0.01, Nt=5000, tmax=1000.0, x0=0.3, 
 
     X = np.empty((Nt + 1, n_paths), dtype=float)
     if sigma0 == 0.0:
-        X[0, :] = x0
+        X[0, :] = x0  # deterministic initial condition
     else:
         a = (0.0 - x0) / sigma0
         b = (1.0 - x0) / sigma0
+        # initial condition drawn from a truncated Gaussian over allele frequency in [0, 1]
         X[0, :] = truncnorm.rvs(a, b, loc=x0, scale=sigma0, size=n_paths, random_state=rng)
 
     absorbed = np.zeros(n_paths, dtype=bool)
@@ -53,6 +69,7 @@ def simulate_kimura_sde_milstein(Ne=1000, s=0.01, Nt=5000, tmax=1000.0, x0=0.3, 
                 xa
                 + a_drift(xa, s) * dt
                 + b_diffusion(xa, Ne) * dW
+                # Milstein strong-order-1 correction for multiplicative Ito noise
                 + 0.5 * bb_prime(xa, Ne) * (dW * dW - dt)
             )
 
@@ -62,6 +79,7 @@ def simulate_kimura_sde_milstein(Ne=1000, s=0.01, Nt=5000, tmax=1000.0, x0=0.3, 
             xa_next = np.where(hit_left, 0.0, xa_next)
             xa_next = np.where(hit_right, 1.0, xa_next)
 
+            # project to absorbing states once trajectories cross the boundaries
             x_next[active] = xa_next
             absorbed[active] = hit_left | hit_right
 

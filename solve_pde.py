@@ -3,26 +3,25 @@ from scipy.sparse import diags
 from scipy.sparse.linalg import spsolve
 from scipy.stats import truncnorm
 
-"""Kimura PDE solver using an implicit Chang-Cooper finite-volume scheme.
-
-This module exposes a callable function `solve_kimura_pde` and does not perform
-any plotting at import/runtime.
-"""
-
 
 def A_drift(x, s):
+    '''Return the drift coefficient A(x) = s x(1-x)'''
     return s * x * (1.0 - x)
 
 
 def D_diff(x, Ne):
+    '''Return the diffusion coefficient D(x) = x(1-x)/(2Ne)'''
     return x * (1.0 - x) / (2.0 * Ne)
 
 
 def D_prime(x, Ne):
+    '''Return the derivative of the diffusion coefficient D'(x) = (1-2x)/(2Ne)'''
     return (1.0 - 2.0 * x) / (2.0 * Ne)
 
 
 def B_eff(x, s, Ne):
+    '''Return the effective drift coefficient B(x) = A(x) - D'(x)'''
+    # Rewrite J = A phi - (D phi)_x as J = B phi - D phi_x for Chang-Cooper.
     return A_drift(x, s) - D_prime(x, Ne)
 
 
@@ -75,6 +74,7 @@ def solve_kimura_pde_chang_cooper(Ne: float = 1000, s: float = 0.01, Nx: int = 5
     phi = truncnorm.pdf(x, a, b, loc=x0, scale=sigma0)  # initial condition
 
     x_half = 0.5 * (x[:-1] + x[1:])
+    # Evaluate transport coefficients at cell interfaces for finite-volume fluxes.
     D_half = D_diff(x_half, Ne)
     B_half = B_eff(x_half, s, Ne)
 
@@ -83,9 +83,11 @@ def solve_kimura_pde_chang_cooper(Ne: float = 1000, s: float = 0.01, Nx: int = 5
 
     delta = np.empty_like(w)
     small = np.abs(w) < 1e-8
+    # Chang-Cooper upwind/exponential fitting weight enforces correct steady states.
     delta[small] = 0.5
     delta[~small] = 1.0 / w[~small] - 1.0 / np.expm1(w[~small])
 
+    # Interface flux is linear in neighboring cell values: J_{i+1/2} = alpha*phi_i + beta*phi_{i+1}.
     alpha = B_half * delta + D_half / dx
     beta = B_half * (1.0 - delta) - D_half / dx
 
@@ -104,6 +106,7 @@ def solve_kimura_pde_chang_cooper(Ne: float = 1000, s: float = 0.01, Nx: int = 5
             upper[k] = (dt / dx) * beta[i]
 
     M = diags(diagonals=[lower, diag, upper], offsets=[-1, 0, 1], format="csc")
+    # Backward Euler on conservative flux form yields an M-matrix-like implicit update.
 
     T = np.linspace(0.0, tmax, Nt + 1)
 
@@ -128,6 +131,7 @@ def solve_kimura_pde_chang_cooper(Ne: float = 1000, s: float = 0.01, Nx: int = 5
         J_left = beta[0] * phi[1]
         J_right = alpha[-1] * phi[-2]
 
+        # Boundary flux integrals are exactly the absorbed loss/fixation probabilities.
         P_loss[n + 1] = P_loss[n] + dt * (-J_left)
         P_fix[n + 1] = P_fix[n] + dt * J_right
 

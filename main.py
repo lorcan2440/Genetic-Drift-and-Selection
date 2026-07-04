@@ -7,8 +7,11 @@ from solve_pde import solve_kimura_pde_chang_cooper
 from solve_sde import simulate_kimura_sde_milstein, calc_absorption_fractions
 
 
-plt.style.use(r"C:\LibsAndApps\Python config files\proplot_style.mplstyle")
 
+STYLESHEET_PATH = r"C:\LibsAndApps\Python config files\proplot_style.mplstyle"
+
+if os.path.exists(STYLESHEET_PATH):
+    plt.style.use(STYLESHEET_PATH)
 
 
 def create_plots(Ne: float = 100, s: float = 0.003, Nx: int = 1000, Nt: int = 10000, tmax: float = 500.0, 
