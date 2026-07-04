@@ -42,6 +42,8 @@ In this code, the actual initial condition is approximated by a narrow Gaussian 
 
 To give this problem a unique solution, we require boundary conditions at $ x = 0 $ and $ x = 1 $. These are absorbing boundaries, meaning that if the allele frequency reaches either boundary, it will remain there (fixation or loss of the allele).
 
+We have assumed that no new mutations occur during the simulation, so that the system remains with only two alleles. This is reasonable for short-term simulations as it is known that standing variation is the main source of genetic variation in populations, and new mutations are relatively rare events on a per-allele basis.
+
 A suitable numerical method for solving this PDE (as a Fokker-Planck equation) is the Chang-Cooper scheme, which is a finite difference method that preserves the positivity and normalization of the probability density function.
 
 To calculate the probability of fixation or loss of allele A, we define the probability flux $ J(x, t) $ as:
