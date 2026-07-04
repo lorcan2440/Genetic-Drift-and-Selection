@@ -78,6 +78,12 @@ where $ W_t $ is the Wiener process (standard Brownian motion).
 
 A suitable numerical method for generating sample paths of this SDE is the Milstein method, used in this code.
 
+It can be shown that the mean time to absorption (fixation or loss) of the allele frequency at time $ t = 0 $ is given by the solution to the following BVP:
+
+$$ T''(x) + 2 N_e s T'(x) = \frac{-2 N_e}{x(1 - x)}, \quad T(0) = T(1) = 0 $$
+
+The mean absorption time from an initial allele frequency $ x_0 $ is then given by $ T(x_0) $.
+
 ## Results
 
 ![Kimura's PDE and SDE Comparison](output/kimura_pde_sde_comparison.svg)
@@ -89,6 +95,10 @@ $$ P_{\text{fix}} = \frac{1 - e^{-2 N_e s x_0}}{1 - e^{-2 N_e s}} $$
 In this simulation, parameters used were $ N_e = 100 $, $ s = 0.003 $, $ x_0 = 0.3 $, and $ \sigma_0 = 0.08 $. This represents drift below the selection threshold since $ N_e s = 0.3 < 1 $ - but fixation is still achieved with a non-zero probability, as expected of nearly-neutral alleles.
 
 The maximum error in the probability mass (computed as the greatest difference between the total probability at time $ t $ and 1) was on the order of $ 10^{-6} $, showing the numerical solution is well-behaved.
+
+If we vary the initial allele frequency, the mean absorption time has the following shape:
+
+![Mean Absorption Time vs Initial Allele Frequency](output/kimura_mean_absorption_times.svg)
 
 Some counter-intuitive but nonetheless accurate conclusions include:
 

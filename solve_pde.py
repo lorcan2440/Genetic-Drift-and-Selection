@@ -1,7 +1,15 @@
+import os
 import numpy as np
 from scipy.sparse import diags
 from scipy.sparse.linalg import spsolve
 from scipy.stats import truncnorm
+from matplotlib import pyplot as plt
+
+
+STYLESHEET_PATH = r"C:\LibsAndApps\Python config files\proplot_style.mplstyle"
+
+if os.path.exists(STYLESHEET_PATH):
+    plt.style.use(STYLESHEET_PATH)
 
 
 def A_drift(x, s):
@@ -151,6 +159,59 @@ def solve_kimura_pde_chang_cooper(Ne: float = 1000, s: float = 0.01, Nx: int = 5
     }
 
     return x, T, Phi, results
+
+
+def calc_mean_absorption_times(Ne: float = 1000, s: float = 0.01, 
+        x0_arr: np.ndarray | None = None, Nx: int = 2000) -> np.ndarray:
+    '''
+    Compute mean absorption (loss-or-fixation) time from
+
+    T''(x) + 2 N_e s T'(x) = -2 N_e / (x(1 - x)), 0 < x < 1
+
+    where the boundary conditions are T(0) = T(1) = 0.
+
+    A direct BVP solve on [0, 1] is numerically problematic because the RHS is
+    singular at x = 0 and x = 1. We therefore solve the ODE on interior nodes
+    with centered finite differences and then interpolate onto x0_arr.
+    '''
+    if x0_arr is None:
+        x0_arr = np.linspace(0.0, 1.0, 101)
+    else:
+        x0_arr = np.asarray(x0_arr, dtype=float)
+
+    if x0_arr.ndim != 1:
+        raise ValueError("x0_arr must be a 1D array of initial frequencies.")
+    if np.any((x0_arr < 0.0) | (x0_arr > 1.0)):
+        raise ValueError("x0_arr values must lie in [0, 1].")
+    if Ne <= 0.0:
+        raise ValueError("Ne must be positive.")
+    if Nx < 5:
+        raise ValueError("Nx must be at least 5.")
+
+    x = np.linspace(0.0, 1.0, Nx)
+    dx = x[1] - x[0]
+    x_in = x[1:-1]
+    n_in = x_in.size
+
+    drift = 2.0 * Ne * s
+    rhs = -2.0 * Ne / (x_in * (1.0 - x_in))
+
+    lower = np.full(n_in - 1, 1.0 / dx**2 - drift / (2.0 * dx))
+    diag = np.full(n_in, -2.0 / dx**2)
+    upper = np.full(n_in - 1, 1.0 / dx**2 + drift / (2.0 * dx))
+
+    A = diags([lower, diag, upper], offsets=[-1, 0, 1], format="csc")
+    T_in = spsolve(A, rhs)
+
+    T_grid = np.zeros_like(x)
+    T_grid[1:-1] = T_in
+
+    T_means = np.interp(x0_arr, x, T_grid)
+    T_means[x0_arr <= 0.0] = 0.0
+    T_means[x0_arr >= 1.0] = 0.0
+
+    return T_means
+
 
 
 if __name__ == "__main__":
