@@ -36,7 +36,7 @@ $$ \phi(x, 0) = \delta(x - x_0) $$
 
 where $ \phi(x, t) $ is the probability density function of the allele frequency being $ x $ at time $ t $.
 
-The subsequent **evolution** (change in allele frequency over time) under the combined effect of genetic drift and natural selection can be described by Motoo Kimura's drift-diffusion equation, which is a partial differential equation (PDE):
+The subsequent **evolution** (change in allele frequency over time) under the combined effect of genetic drift and natural selection can be described by Motoo Kimura's drift-diffusion (Fokker-Planck) equation, which is a partial differential equation (PDE):
 
 $$ \frac{\partial \phi(x, t)}{\partial t} = -\frac{\partial}{\partial x} \left[ s x (1 - x) \phi(x, t) \right] + \frac{1}{2 N_e} \frac{\partial^2}{\partial x^2} \left[ x (1 - x) \phi(x, t) \right] $$
 
@@ -70,7 +70,7 @@ The probability that the allele frequency is still segregating (neither fixed no
 
 $$ P_{\text{seg}}(t) = \int_0^1 \phi(x, t) dx = 1 - P_{\text{fix}}(t) - P_{\text{loss}}(t). $$
 
-To simulate individual trajectories of allele frequencies, we can use the corresponding stochastic differential equation (SDE):
+To simulate individual trajectories of allele frequencies, we can use the corresponding Itô stochastic differential equation (SDE):
 
 $$ dx = s x (1 - x) dt + \sqrt{\frac{x (1 - x)}{2 N_e}} dW_t $$
 
