@@ -26,7 +26,7 @@ The editable parameters are:
 
 Suppose we have a population of "effective" size $ N_e $. At a particular locus (section of DNA), there are two **alleles** (variants of the DNA sequence), A and a, with frequencies $ x $ and $ 1 - x $, respectively. 
 
-The dynamics of allele frequency over time is influenced by **genetic drift**, which is the random fluctuations due to finite population size. 
+Assuming random mating within the population, the dynamics of allele frequency over time is influenced by **genetic drift**, which is the random fluctuations (deviations from the expected frequencies under Hardy-Weinberg equilibrium) due to finite population size. 
 
 If the allele A has some selective advantage (or disadvantage) over allele a, then Darwinian **natural selection** (differential reproductive success based on allele type) will also influence the allele frequency dynamics.
 
