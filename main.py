@@ -3,8 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
-from solve_pde import solve_kimura_pde_chang_cooper, calc_mean_absorption_times
-from solve_sde import simulate_kimura_sde_milstein, calc_absorption_fractions
+from solve_pde import solve_kimura_pde, A_drift, D_diff, calc_mean_absorption_times
+from solve_sde import solve_kimura_sde, calc_absorption_fractions
 
 
 STYLESHEET_PATH = r"C:\LibsAndApps\Python config files\proplot_style.mplstyle"
@@ -33,24 +33,28 @@ def create_plots(Ne: float = 100, s: float = 0.003, Nx: int = 1000, Nt: int = 10
     ### Returns
     - `pde_results` (dict): Results from the PDE simulation
     - `X_sde` (np.ndarray): Simulated SDE trajectories
-    '''    
-    
-    x_pde, T_pde, Phi, pde_results = solve_kimura_pde_chang_cooper(Ne=Ne, s=s, Nx=Nx, Nt=Nt, tmax=tmax, x0=x0, sigma0=sigma0)
+    '''
 
-    T_sde, X_sde = simulate_kimura_sde_milstein(Ne=Ne, s=s, Nt=Nt, tmax=tmax, x0=x0, sigma0=sigma0, n_paths=n_paths, seed=seed)
+    # solve the PDE to get the probability density function and absorption probabilities
+    x_pde, T_pde, Phi, pde_results = solve_kimura_pde(Ne=Ne, s=s, Nx=Nx, Nt=Nt, tmax=tmax, x0=x0, sigma0=sigma0)
 
-    # Theoretical mean absorption time at this initial frequency x0.
+    # solve the SDE to get sampled trajectories
+    T_sde, X_sde = solve_kimura_sde(Ne=Ne, s=s, Nt=Nt, tmax=tmax, x0=x0, sigma0=sigma0, n_paths=n_paths, seed=seed)
+
+    # get mean absorption time according to theory
     x0_arr = np.linspace(0, 1, 100)
     T_means = calc_mean_absorption_times(Ne=Ne, s=s, x0_arr=x0_arr)
     T_x0 = np.interp(x0, x0_arr, T_means)
 
-    # Empirical mean absorption time from sampled trajectories.
+    # get mean absorption time according to empirical SDE trajectories
+    # NOTE: this is biassed to be a slight underestimate since we only consider trajectories 
+    # that have been absorbed already by the end of the simulation
     absorbed_mask = (X_sde <= 0.0) | (X_sde >= 1.0)
     absorbed_any = np.any(absorbed_mask, axis=0)
     first_abs_idx = np.argmax(absorbed_mask, axis=0)
     t_abs_empirical = np.mean(T_sde[first_abs_idx[absorbed_any]]) if np.any(absorbed_any) else np.nan
 
-    # calculate theoretical fixation probability (after infinite time)
+    # get eventual fixation probabilities according to theory
     gamma = 2.0 * Ne * s
     if np.isclose(gamma, 0.0):
         p_fix_theory = x0
@@ -65,9 +69,9 @@ def create_plots(Ne: float = 100, s: float = 0.003, Nx: int = 1000, Nt: int = 10
     ax1 = fig1.add_subplot(gs[:, 0], projection="3d")
     X_pde_grid, T_pde_grid = np.meshgrid(x_pde, T_pde)
     surf = ax1.plot_surface(X_pde_grid, T_pde_grid, Phi, cmap="RdPu", linewidth=0, antialiased=True)
-    ax1.set_box_aspect((1.6, 1.0, 0.55))  # 3D data box uses more of its subplot area
+    ax1.set_box_aspect((1.3, 1.3, 0.55))  # 3D data box uses more of its subplot area
     ax1.set_xlabel("Allele frequency, $ x $")
-    ax1.set_ylabel("Time, $ t $")
+    ax1.set_ylabel("Time in generations, $ t $")
     ax1.set_zlabel(r"Probability density, $\phi(x,t)$")
     ax1.view_init(elev=30, azim=-75, roll=0)
     ax1.set_title("Numerical Solution to Kimura's Drift-Diffusion PDE (Chang-Cooper scheme)")
@@ -76,23 +80,10 @@ def create_plots(Ne: float = 100, s: float = 0.003, Nx: int = 1000, Nt: int = 10
     # ax2: sampled SDE trajectories
     ax2 = fig1.add_subplot(gs[0, 1])
     ax2.plot(T_sde, X_sde, color="tab:blue", alpha=0.03, linewidth=0.7)
-    if np.isfinite(t_abs_empirical):
-        ax2.axvline(
-            t_abs_empirical,
-            color="tab:green",
-            ls="--",
-            lw=2.0,
-            alpha=0.95,
-            label=rf"Empirical mean absorption time = {t_abs_empirical:.2f}",
-        )
-    ax2.axvline(
-        T_x0,
-        color="tab:red",
-        ls="--",
-        lw=2.0,
-        alpha=0.95,
-        label=rf"Theoretical mean absorption time = {T_x0:.2f}",
-    )
+    ax2.axvline(t_abs_empirical, color="tab:green", ls="--", lw=2.0, alpha=0.95,
+        label=rf"Empirical mean absorption time = {t_abs_empirical:.2f}")
+    ax2.axvline(T_x0, color="tab:red", ls="--", lw=2.0, alpha=0.95,
+        label=rf"Theoretical mean absorption time = {T_x0:.2f}")
     ax2.set_ylabel("Allele frequency, $ x $")
     ax2.set_title("Trajectories of Kimura's SDE (Milstein's method)")
     ax2.set_ylim(-0.02, 1.02)
@@ -109,7 +100,7 @@ def create_plots(Ne: float = 100, s: float = 0.003, Nx: int = 1000, Nt: int = 10
         label=rf"$P_{{\mathrm{{loss}}}}^{{\mathrm{{theory}}}}={p_loss_theory:.3f}$")
     ax3.axhline(p_fix_theory, color="tab:orange", ls=(0, (5, 3)), lw=1.8, alpha=0.9,
         label=rf"$P_{{\mathrm{{fix}}}}^{{\mathrm{{theory}}}}={p_fix_theory:.3f}$")
-    ax3.set_xlabel("Time, $ t $")
+    ax3.set_xlabel("Time in generations, $ t $")
     ax3.set_ylabel("Probability")
     ax3.set_title("Theoretical Probabilities of Fixation and Loss")
     ax3.set_ylim(-0.02, 1.02)
@@ -123,7 +114,7 @@ def create_plots(Ne: float = 100, s: float = 0.003, Nx: int = 1000, Nt: int = 10
             os.makedirs(save_folder, exist_ok=True)
         fig1.savefig(os.path.join(save_folder, "kimura_pde_sde_comparison.svg"), dpi=300, bbox_inches="tight")
 
-    fig, ax = plt.subplots(figsize=(6, 4))
+    fig2, ax = plt.subplots(figsize=(6, 4))
     ax.plot(x0_arr, T_means, color="blue")
     ax.plot(x0, T_x0, marker="o", color="red", markersize=6, label=f"Initial $x_0={x0}$, $T(x_0)={T_x0:.2f}$")
     ax.legend(loc="lower center")
@@ -134,14 +125,14 @@ def create_plots(Ne: float = 100, s: float = 0.003, Nx: int = 1000, Nt: int = 10
     if save_folder is not None:
         if not os.path.isdir(save_folder):
             os.makedirs(save_folder, exist_ok=True)
-        fig.savefig(os.path.join(save_folder, "kimura_mean_absorption_times.svg"), dpi=300, bbox_inches="tight")
+        fig2.savefig(os.path.join(save_folder, "kimura_mean_absorption_times.svg"), dpi=300, bbox_inches="tight")
 
     return pde_results, X_sde
 
 
 if __name__ == "__main__":
 
-    pde_results, X_sde = create_plots(Ne=100, s=0.003, x0=0.3, sigma0=0.08, save_folder="output")
+    pde_results, X_sde = create_plots(Ne=1000, s=0.03, x0=0.001, sigma0=0.0003, save_folder="output")
 
     print(
         "PDE mass error "

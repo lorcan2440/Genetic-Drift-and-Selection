@@ -58,15 +58,11 @@ such that the PDE can be rewritten as a continuity equation:
 
 $$ \frac{\partial \phi(x, t)}{\partial t} = -\frac{\partial J(x, t)}{\partial x}. $$
 
-The probability of **fixation** of allele A is given by the time-integrated flux at $ x = 1 $:
+The probability of **fixation** or **loss** of allele A is given by the time-integrated flux at each boundary respectively:
 
-$$ P_{\text{fix}}(t) = \int_0^t J(1, \tau) d\tau $$
+$$ P_{\text{fix}}(t) = \int_0^t J(1, \tau) d\tau \quad \quad P_{\text{loss}}(t) = \int_0^t J(0, \tau) d\tau $$
 
-Likewise, the probability of **loss** of allele A is given by the time-integrated flux at $ x = 0 $:
-
-$$ P_{\text{loss}}(t) = \int_0^t J(0, \tau) d\tau $$
-
-The probability that the allele frequency is still segregating (neither fixed nor lost) at time $ t $ is given by:
+The probability that the allele frequency is still segregating (neither fixed nor lost) at time $ t $ is given by the remaining probability mass in the interior of the domain:
 
 $$ P_{\text{seg}}(t) = \int_0^1 \phi(x, t) dx = 1 - P_{\text{fix}}(t) - P_{\text{loss}}(t). $$
 
@@ -90,7 +86,7 @@ The mean absorption time from an initial allele frequency $ x_0 $ is then given 
 
 It can be seen visually that the PDE solution and the SDE simulations are in good agreement. The long-term fixation probability computed from the PDE solution matches that predicted by Kimura's formula:
 
-$$ P_{\text{fix}} = \frac{1 - e^{-2 N_e s x_0}}{1 - e^{-2 N_e s}} $$
+$$ \lim_{t \to \infty} P_{\text{fix}}(t) = \frac{1 - e^{-2 N_e s x_0}}{1 - e^{-2 N_e s}} $$
 
 In this simulation, parameters used were $ N_e = 100 $, $ s = 0.003 $, $ x_0 = 0.3 $, and $ \sigma_0 = 0.08 $. This represents drift below the selection threshold since $ N_e s = 0.3 < 1 $ - but fixation is still achieved with a non-zero probability, as expected of nearly-neutral alleles.
 

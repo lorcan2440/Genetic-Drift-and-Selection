@@ -22,28 +22,28 @@ def D_diff(x, Ne):
     return x * (1.0 - x) / (2.0 * Ne)
 
 
-def D_prime(x, Ne):
+def D_derivative(x, Ne):
     '''Return the derivative of the diffusion coefficient D'(x) = (1-2x)/(2Ne)'''
     return (1.0 - 2.0 * x) / (2.0 * Ne)
 
 
-def B_eff(x, s, Ne):
-    '''Return the effective drift coefficient B(x) = A(x) - D'(x)'''
-    # Rewrite J = A phi - (D phi)_x as J = B phi - D phi_x for Chang-Cooper.
-    return A_drift(x, s) - D_prime(x, Ne)
+def numerical_derivative(func, x: np.ndarray, eps: float = 1e-6) -> np.ndarray:
+    """Return a centered finite-difference derivative for vector inputs."""
+    h = eps * np.maximum(1.0, np.abs(x))
+    return (func(x + h) - func(x - h)) / (2.0 * h)
 
 
-def solve_kimura_pde_chang_cooper(Ne: float = 1000, s: float = 0.01, Nx: int = 500, Nt: int = 5000, tmax: float = 1000.0, 
-        x0: float = 0.3, sigma0: float = 0.03) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict[str, np.ndarray]]:
+def solve_fokker_planck_pde_chang_cooper(A: callable, D: callable, Phi0: callable, D_prime: callable = None,
+        Nx: int = 500, Nt: int = 5000, tmax: float = 1000.0) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict[str, np.ndarray]]:
     '''
-    Solve Kimura's drift-diffusion PDE with absorbing boundaries via the implicit Chang-Cooper scheme:
+    Solve the drift-diffusion (Fokker-Planck) PDE with absorbing boundaries at x = 0 and x = 1 
+    via the implicit Chang-Cooper scheme:
 
     ∂φ/∂t = -∂(A(x) φ)/∂x + ∂²(D(x) φ)/∂x², 0 < x < 1, t > 0
 
-    where A(x) = s x(1-x) and D(x) = x(1-x)/(2Ne), with absorbing boundaries at x = 0 and x = 1.
+    where A(x) is the drift and D(x) is the diffusion coefficient, with absorbing boundaries at x = 0 and x = 1.
 
-    The initial condition φ(x, 0) is a Gaussian centered at x0 with standard deviation sigma0 
-    (truncated to [0, 1]).
+    The initial condition φ(x, 0) is provided by the function `Phi0`.
 
     The function J(x, t) = A(x) φ(x, t) - ∂(D(x) φ(x, t))/∂x is the probability flux, such that
     the PDE can be written as ∂φ/∂t = -∂J/∂x. The absorption probabilities are given by
@@ -53,13 +53,14 @@ def solve_kimura_pde_chang_cooper(Ne: float = 1000, s: float = 0.01, Nx: int = 5
     The function returns the solution φ(x, t) on a grid, as well as these integrals of probability fluxes.
     
     ### Arguments
-    - `Ne` (float, default = 1000): Effective population size.
-    - `s` (float, default = 0.01): Selection coefficient.
+    - `A` (callable): Drift coefficient function A(x).
+    - `D` (callable): Diffusion coefficient function D(x).
+    - `Phi0` (callable): Initial condition function φ(x, 0) to be evaluated on the spatial grid.
+    - `D_prime` (callable, optional): Derivative of the diffusion coefficient D'(x). 
+    If None, it will be computed numerically.
     - `Nx` (int, default = 500): Number of spatial grid points.
     - `Nt` (int, default = 5000): Number of time steps.
     - `tmax` (float, default = 1000.0): Maximum simulation time.
-    - `x0` (float, default = 0.3): Initial allele frequency.
-    - `sigma0` (float, default = 0.03): Standard deviation of the initial Gaussian distribution.
     
     ### Returns
     - `tuple[np.ndarray, np.ndarray, np.ndarray, dict[str, np.ndarray]]`: Tuple containing the spatial grid `x`, 
@@ -77,25 +78,24 @@ def solve_kimura_pde_chang_cooper(Ne: float = 1000, s: float = 0.01, Nx: int = 5
         raise ValueError("Nx must be at least 3 to have interior nodes.")
 
     Nint = Nx - 2
-    a = (0.0 - x0) / sigma0
-    b = (1.0 - x0) / sigma0
-    phi = truncnorm.pdf(x, a, b, loc=x0, scale=sigma0)  # initial condition
 
+    # evaluate transport coefficients at cell interfaces for finite-volume fluxes.
     x_half = 0.5 * (x[:-1] + x[1:])
-    # Evaluate transport coefficients at cell interfaces for finite-volume fluxes.
-    D_half = D_diff(x_half, Ne)
-    B_half = B_eff(x_half, s, Ne)
+    D_half = D(x_half)
+    if D_prime is None:
+        B_half = A(x_half) - numerical_derivative(D, x_half)
+    else:
+        B_half = A(x_half) - D_prime(x_half)
 
+    # Chang-Cooper upwind/exponential fitting weight, enforces correct steady states
     eps = 1e-15
     w = B_half * dx / (D_half + eps)
-
     delta = np.empty_like(w)
     small = np.abs(w) < 1e-8
-    # Chang-Cooper upwind/exponential fitting weight enforces correct steady states.
     delta[small] = 0.5
     delta[~small] = 1.0 / w[~small] - 1.0 / np.expm1(w[~small])
 
-    # Interface flux is linear in neighboring cell values: J_{i+1/2} = alpha*phi_i + beta*phi_{i+1}.
+    # interface flux is linear in neighboring cell values: J_{i+1/2} = alpha*phi_i + beta*phi_{i+1}.
     alpha = B_half * delta + D_half / dx
     beta = B_half * (1.0 - delta) - D_half / dx
 
@@ -103,6 +103,7 @@ def solve_kimura_pde_chang_cooper(Ne: float = 1000, s: float = 0.01, Nx: int = 5
     diag = np.zeros(Nint)
     upper = np.zeros(Nint - 1)
 
+    # backward Euler on conservative flux form
     for k in range(Nint):
         i = k + 1
         diag[k] = 1.0 + (dt / dx) * (alpha[i] - beta[i - 1])
@@ -114,12 +115,12 @@ def solve_kimura_pde_chang_cooper(Ne: float = 1000, s: float = 0.01, Nx: int = 5
             upper[k] = (dt / dx) * beta[i]
 
     M = diags(diagonals=[lower, diag, upper], offsets=[-1, 0, 1], format="csc")
-    # Backward Euler on conservative flux form yields an M-matrix-like implicit update.
-
+    
     T = np.linspace(0.0, tmax, Nt + 1)
 
-    Phi = np.zeros((Nt + 1, Nx))
-    Phi[0] = phi.copy()
+    phi = Phi0(x)  # current solution Phi(x, t_n)
+    Phi = np.zeros((Nt + 1, Nx))  # full solution array Phi(x, t)
+    Phi[0] = phi.copy()  # set initial condition
 
     P_loss = np.zeros(Nt + 1)
     P_fix = np.zeros(Nt + 1)
@@ -139,7 +140,7 @@ def solve_kimura_pde_chang_cooper(Ne: float = 1000, s: float = 0.01, Nx: int = 5
         J_left = beta[0] * phi[1]
         J_right = alpha[-1] * phi[-2]
 
-        # Boundary flux integrals are exactly the absorbed loss/fixation probabilities.
+        # boundary flux integrals are the absorbed loss/fixation probabilities.
         P_loss[n + 1] = P_loss[n] + dt * (-J_left)
         P_fix[n + 1] = P_fix[n] + dt * J_right
 
@@ -159,6 +160,21 @@ def solve_kimura_pde_chang_cooper(Ne: float = 1000, s: float = 0.01, Nx: int = 5
     }
 
     return x, T, Phi, results
+
+
+def solve_kimura_pde(Ne: float = 1000, s: float = 0.01, Nx: int = 500, Nt: int = 5000, tmax: float = 1000.0,
+        x0: float = 0.3, sigma0: float = 0.03) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict[str, np.ndarray]]:
+    """Set up and solve Kimura's PDE using the Chang-Cooper scheme."""
+    A = lambda x: A_drift(x, s)
+    D = lambda x: D_diff(x, Ne)
+
+    dD_dx = lambda x: D_derivative(x, Ne)
+
+    a = (0.0 - x0) / sigma0
+    b = (1.0 - x0) / sigma0
+    Phi0 = lambda x: truncnorm.pdf(x, a, b, loc=x0, scale=sigma0)  # initial condition Phi(x, 0)
+
+    return solve_fokker_planck_pde_chang_cooper(A, D, Phi0, D_prime=dD_dx, Nx=Nx, Nt=Nt, tmax=tmax)
 
 
 def calc_mean_absorption_times(Ne: float = 1000, s: float = 0.01, 
@@ -196,6 +212,7 @@ def calc_mean_absorption_times(Ne: float = 1000, s: float = 0.01,
     drift = 2.0 * Ne * s
     rhs = -2.0 * Ne / (x_in * (1.0 - x_in))
 
+    # tridiagonal matrix for finite difference scheme
     lower = np.full(n_in - 1, 1.0 / dx**2 - drift / (2.0 * dx))
     diag = np.full(n_in, -2.0 / dx**2)
     upper = np.full(n_in - 1, 1.0 / dx**2 + drift / (2.0 * dx))
@@ -213,10 +230,11 @@ def calc_mean_absorption_times(Ne: float = 1000, s: float = 0.01,
     return T_means
 
 
-
 if __name__ == "__main__":
 
-    x, T, Phi, results = solve_kimura_pde_chang_cooper()
+    Ne = 1000
+    s = 0.01
+    x, T, Phi, results = solve_kimura_pde(Ne=Ne, s=s)
 
     print(
         "Max conservation error "
