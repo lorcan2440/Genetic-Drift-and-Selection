@@ -107,10 +107,8 @@ def solve_fokker_planck_pde_chang_cooper(A: callable, D: callable, Phi0: callabl
     for k in range(Nint):
         i = k + 1
         diag[k] = 1.0 + (dt / dx) * (alpha[i] - beta[i - 1])
-
         if k > 0:
             lower[k - 1] = -(dt / dx) * alpha[i - 1]
-
         if k < Nint - 1:
             upper[k] = (dt / dx) * beta[i]
 
@@ -118,7 +116,17 @@ def solve_fokker_planck_pde_chang_cooper(A: callable, D: callable, Phi0: callabl
     
     T = np.linspace(0.0, tmax, Nt + 1)
 
-    phi = Phi0(x)  # current solution Phi(x, t_n)
+    phi = np.asarray(Phi0(x), dtype=float)  # current solution Phi(x, t_n)
+    if phi.shape != x.shape:
+        raise ValueError("Phi0(x) must return an array with the same shape as x.")
+
+    # normalise discretised initial condition
+    phi[0] = 0.0
+    phi[-1] = 0.0
+    phi = np.maximum(phi, 0.0)
+    mass0 = np.trapezoid(phi, x)  # should be close to 1.0
+    phi /= mass0
+
     Phi = np.zeros((Nt + 1, Nx))  # full solution array Phi(x, t)
     Phi[0] = phi.copy()  # set initial condition
 
@@ -131,7 +139,7 @@ def solve_fokker_planck_pde_chang_cooper(A: callable, D: callable, Phi0: callabl
     P_total[0] = P_interior[0] + P_loss[0] + P_fix[0]
 
     for n in range(Nt):
-        phi_in_old = phi[1:-1]
+        phi_in_old = phi[1:-1]  # excluding boundaries
         phi_in_new = spsolve(M, phi_in_old)
 
         phi[:] = 0.0

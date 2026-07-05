@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
-from solve_pde import solve_kimura_pde, A_drift, D_diff, calc_mean_absorption_times
+from solve_pde import solve_kimura_pde, calc_mean_absorption_times
 from solve_sde import solve_kimura_sde, calc_absorption_fractions
 
 
@@ -68,7 +68,7 @@ def create_plots(Ne: float = 100, s: float = 0.003, Nx: int = 1000, Nt: int = 10
     # ax1: PDF solution of Kimura's PDE
     ax1 = fig1.add_subplot(gs[:, 0], projection="3d")
     X_pde_grid, T_pde_grid = np.meshgrid(x_pde, T_pde)
-    surf = ax1.plot_surface(X_pde_grid, T_pde_grid, Phi, cmap="RdPu", linewidth=0, antialiased=True)
+    surf = ax1.plot_surface(X_pde_grid, T_pde_grid, Phi, cmap="RdPu", linewidth=0)
     ax1.set_box_aspect((1.3, 1.3, 0.55))  # 3D data box uses more of its subplot area
     ax1.set_xlabel("Allele frequency, $ x $")
     ax1.set_ylabel("Time in generations, $ t $")
@@ -103,6 +103,7 @@ def create_plots(Ne: float = 100, s: float = 0.003, Nx: int = 1000, Nt: int = 10
     ax3.set_xlabel("Time in generations, $ t $")
     ax3.set_ylabel("Probability")
     ax3.set_title("Theoretical Probabilities of Fixation and Loss")
+    ax3.set_xlim(0, tmax)
     ax3.set_ylim(-0.02, 1.02)
     ax3.grid(alpha=0.3)
     ax3.legend(loc="upper right", ncol=2)
@@ -132,7 +133,7 @@ def create_plots(Ne: float = 100, s: float = 0.003, Nx: int = 1000, Nt: int = 10
 
 if __name__ == "__main__":
 
-    pde_results, X_sde = create_plots(Ne=1000, s=0.03, x0=0.001, sigma0=0.0003, save_folder="output")
+    pde_results, X_sde = create_plots(Ne=20, s=0.05, x0=0.2, sigma0=0.03, n_paths=500, tmax=100, save_folder="output")
 
     print(
         "PDE mass error "
